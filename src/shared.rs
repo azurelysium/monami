@@ -19,7 +19,7 @@ pub struct MonamiControlMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum MessageType { Status, Control }
+pub enum MessageType { Invalid, Status, Control }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MonamiMessage {

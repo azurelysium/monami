@@ -12,6 +12,7 @@ use std::collections::HashMap;
 
 use clap::{Arg, App, AppSettings, SubCommand};
 
+mod utils;
 mod shared;
 mod server;
 mod client;
@@ -20,6 +21,7 @@ use server::MonamiServer;
 use client::{MonamiClient, send_message};
 use shared::{MonamiMessage, MonamiControlMessage};
 use shared::MessageType;
+use utils::aes_encrypt;
 
 
 fn main() {
@@ -145,7 +147,7 @@ fn main() {
         let expiration: i64 = matches.value_of("expiration").unwrap().parse().unwrap();
         let secret: &str = matches.value_of("secret").unwrap();
 
-        let srv = MonamiServer::new(host, port, expiration);
+        let srv = MonamiServer::new(host.to_owned(), port.to_owned(), secret.to_owned(), expiration);
         srv.run();
     }
 
@@ -158,8 +160,8 @@ fn main() {
         let tag: &str = matches.value_of("tag").unwrap();
         let command: &str = matches.value_of("command").unwrap();
 
-        let cli = MonamiClient::new(host.to_owned(), port.to_owned(), interval,
-                                    command.to_owned(), tag.to_owned());
+        let cli = MonamiClient::new(host.to_owned(), port.to_owned(), secret.to_owned(),
+                                    interval, command.to_owned(), tag.to_owned());
         cli.run();
     }
 
@@ -181,6 +183,7 @@ fn main() {
         };
 
         let payload = serde_json::to_string(&message).unwrap();
-        tokio::run(send_message(&host, &port, &payload));
+        let encrypted = aes_encrypt(&payload, &secret).unwrap();
+        tokio::run(send_message(&host, &port, &encrypted));
     }
 }

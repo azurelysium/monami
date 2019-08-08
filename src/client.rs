@@ -16,6 +16,7 @@ use serde_json::json;
 
 use crate::shared::{MonamiMessage, MonamiStatusMessage};
 use crate::shared::{MessageType};
+use crate::utils::aes_encrypt;
 
 
 pub struct MonamiClient {
@@ -23,6 +24,7 @@ pub struct MonamiClient {
     hostname: String,
     host: String,
     port: String,
+    secret: String,
     interval: u64,
     command: String,
     tag: String,
@@ -58,12 +60,12 @@ pub fn send_message(host: &str, port: &str, payload_str: &str)
 }
 
 impl MonamiClient {
-    pub fn new(host: String, port: String, interval: u64,
-               command: String, tag: String) -> MonamiClient {
+    pub fn new(host: String, port: String, secret: String,
+               interval: u64, command: String, tag: String) -> MonamiClient {
 
         let id = uuid::Uuid::new_v4().to_hyphenated().to_string();
         let hostname = hostname::get_hostname().unwrap_or("-".to_owned());
-        MonamiClient { id, hostname, host, port, interval, command, tag }
+        MonamiClient { id, hostname, host, port, secret, interval, command, tag }
     }
 
     pub fn run(self) {
@@ -99,9 +101,10 @@ impl MonamiClient {
                         message_control: None,
                     };
                     let payload = serde_json::to_string(&message).unwrap();
-
                     println!("{}", payload);
-                    tokio::spawn(send_message(&self.host, &self.port, &payload));
+
+                    let encrypted = aes_encrypt(&payload, &self.secret).unwrap();
+                    tokio::spawn(send_message(&self.host, &self.port, &encrypted));
                 }
                 Ok(())
             })
