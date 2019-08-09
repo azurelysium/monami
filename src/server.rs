@@ -1,19 +1,16 @@
 use std::str;
-use std::io::Error;
-use std::net::SocketAddr;
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::collections::HashMap;
 
-use tokio::io;
 use tokio::prelude::*;
 use tokio::net::UdpSocket;
-use tokio::prelude::{AsyncWrite, Future};
+use tokio::prelude::Future;
 
 use serde::{Deserialize, Serialize};
-use serde_json::{Result, Value};
-use chrono::Utc;
+use chrono::{Utc, Local, DateTime};
 
 use crate::shared::{MonamiMessage, MessageType};
-use crate::shared::{MonamiStatusMessage, MonamiControlMessage};
+use crate::shared::MonamiStatusMessage;
 use crate::utils::aes_decrypt;
 
 
@@ -35,7 +32,8 @@ impl MonamiServer {
     pub fn new(host: String, port: String, secret: String, expiration: i64) -> MonamiServer {
 
         let address = format!("{}:{}", host, port);
-        let address = address.parse::<SocketAddr>().unwrap();
+        //let address = address.parse::<SocketAddr>().unwrap();
+        let address = address.to_socket_addrs().unwrap().next().unwrap();
         let socket = UdpSocket::bind(&address).unwrap();
 
         let nodes = HashMap::new();
@@ -67,11 +65,9 @@ impl MonamiServer {
                             message_status: None,
                             message_control: None,
                         };
-                        match aes_decrypt(payload_str, &self.server.secret) {
-                            Ok(decrypted) => {
-                                message = serde_json::from_str(&decrypted).unwrap();
-                            },
-                            Err(_) => {},
+
+                        if let Ok(decrypted) = aes_decrypt(payload_str, &self.server.secret) {
+                            message = serde_json::from_str(&decrypted).unwrap();
                         }
 
                         let mut response = "{\"success\": false}".to_owned();
@@ -85,27 +81,27 @@ impl MonamiServer {
                                 let nodes = &mut self.server.nodes;
                                 let client_uuid = (&message.uuid).to_owned();
 
-                                if nodes.contains_key(&client_uuid) {
-                                    // update expires_at
-                                    let node = &mut nodes.get_mut(&client_uuid).unwrap();
-                                    node.expires_at = now + self.server.expiration;
-
-                                } else {
-                                    // add a newly found node
-                                    nodes.insert(client_uuid, MonamiNode {
+                                // update expiration or insert a newly found node
+                                let expires_at = now + self.server.expiration;
+                                nodes.entry(client_uuid)
+                                    .and_modify(|e| { e.expires_at = expires_at })
+                                    .or_insert(MonamiNode {
                                         message,
                                         address: peer.ip().to_string(),
-                                        expires_at: now + self.server.expiration,
+                                        expires_at,
                                     });
-                                }
 
                                 // remove outdated nodes
                                 nodes.retain(|_, v| v.expires_at > now); 
 
                                 // print list of active nodes
-                                println!("-- Nodes");
+                                let dt: DateTime<Local> = Local::now();
+                                println!("-- {}", dt.to_string());
+
                                 for (client_uuid, node) in nodes.iter() {
-                                    println!("{}: {} ({})", client_uuid, node.address, node.message.hostname);
+                                    println!("{}: {} ({}) [{}]",
+                                             client_uuid, node.address, node.message.hostname,
+                                             node.message.tag);
                                 }
 
                                 response = "{\"success\": true}".to_owned();
@@ -115,10 +111,22 @@ impl MonamiServer {
                             MessageType::Control => {
                                 let message = message.message_control.unwrap();
 
-                                if message.function == "list-nodes" {
+                                if message.function == "get-details" {
                                     response = serde_json::to_string(&json!({
                                         "success": true,
                                         "result": &self.server.nodes,
+                                    })).unwrap();
+                                } else if message.function == "list-nodes" {
+                                    let vec_nodes: Vec<&MonamiNode> = if message.parameters.contains_key("tag") {
+                                        let tag = message.parameters.get("tag").unwrap().to_owned();
+                                        self.server.nodes.values().filter(|v| v.message.tag == tag).collect()
+                                    } else {
+                                        self.server.nodes.values().collect()
+                                    };
+
+                                    response = serde_json::to_string(&json!({
+                                        "success": true,
+                                        "result": &vec_nodes,
                                     })).unwrap();
                                 } else {
                                     response = serde_json::to_string(&json!({

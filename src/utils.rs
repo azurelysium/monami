@@ -26,7 +26,7 @@ pub fn aes_encrypt(data: &str, secret: &str) -> Result<String, symmetriccipher::
 
     loop {
         let result = encryptor.encrypt(&mut read_buffer, &mut write_buffer, true).unwrap();
-        final_result.extend(write_buffer.take_read_buffer().take_remaining().iter().map(|&i| i));
+        final_result.extend(write_buffer.take_read_buffer().take_remaining().iter().copied());
 
         match result {
             BufferResult::BufferUnderflow => break,
@@ -61,7 +61,7 @@ pub fn aes_decrypt(encrypted_data: &str, secret: &str) -> Result<String, symmetr
 
     loop {
         let result = decryptor.decrypt(&mut read_buffer, &mut write_buffer, true)?;
-        final_result.extend(write_buffer.take_read_buffer().take_remaining().iter().map(|&i| i));
+        final_result.extend(write_buffer.take_read_buffer().take_remaining().iter().copied());
         match result {
             BufferResult::BufferUnderflow => break,
             BufferResult::BufferOverflow => { }

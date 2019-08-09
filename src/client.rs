@@ -1,18 +1,15 @@
 extern crate uuid;
 extern crate hostname;
 
-use std::io::Error;
-use std::net::SocketAddr;
-use std::time::{Duration, Instant, SystemTime};
+use std::net::{SocketAddr, ToSocketAddrs};
+use std::time::{Duration, Instant};
 use std::process::Command;
 
-use tokio::io;
 use tokio::prelude::*;
 use tokio::net::UdpSocket;
 use tokio::timer::Interval;
 
 use chrono::{Utc, Local, DateTime};
-use serde_json::json;
 
 use crate::shared::{MonamiMessage, MonamiStatusMessage};
 use crate::shared::{MessageType};
@@ -35,7 +32,8 @@ pub fn send_message(host: &str, port: &str, payload_str: &str)
     let payload = payload_str.to_owned();
 
     let address = format!("{}:{}", host, port);
-    let remote_address = address.parse::<SocketAddr>().unwrap();
+    //let remote_address = address.parse::<SocketAddr>().unwrap();
+    let remote_address = address.to_socket_addrs().unwrap().next().unwrap();
 
     // We use port 0 to let the operating system allocate an available port for us.
     let address = "0.0.0.0:0";
@@ -49,11 +47,7 @@ pub fn send_message(host: &str, port: &str, payload_str: &str)
             .send_dgram(payload, &remote_address)
             .and_then(|(socket, _)| socket.recv_dgram(vec![0u8; MAX_DATAGRAM_SIZE]))
             .map(|(_, data, len, _)| {
-                println!(
-                    "Received {} bytes:\n{}",
-                    len,
-                    String::from_utf8_lossy(&data[..len])
-                )
+                println!("{}", String::from_utf8_lossy(&data[..len]));
             })
             .map_err(|_| ())
     )
@@ -64,7 +58,7 @@ impl MonamiClient {
                interval: u64, command: String, tag: String) -> MonamiClient {
 
         let id = uuid::Uuid::new_v4().to_hyphenated().to_string();
-        let hostname = hostname::get_hostname().unwrap_or("-".to_owned());
+        let hostname = hostname::get_hostname().unwrap_or_else(|| "-".to_owned());
         MonamiClient { id, hostname, host, port, secret, interval, command, tag }
     }
 

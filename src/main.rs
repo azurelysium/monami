@@ -31,10 +31,6 @@ fn main() {
         .about("This is a simple monitoring tool for remote boxes, my friend")
         .version("0.0.1")
         .setting(AppSettings::SubcommandRequiredElseHelp)
-        .arg(Arg::with_name("verbosity")
-             .short("v")
-             .multiple(true)
-             .help("Sets the level of verbosity"))
         .subcommand(SubCommand::with_name("server")
                     .about("runs the monami server")
                     .arg(Arg::with_name("host")
@@ -135,10 +131,6 @@ fn main() {
                          .takes_value(true))
         )
         .get_matches();
-
-    let verbosity = matches.occurrences_of("verbosity");
-
-    // process subcommand
 
     // Subcommand - server
     if let Some(matches) = matches.subcommand_matches("server") {
