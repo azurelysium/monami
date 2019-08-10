@@ -32,7 +32,6 @@ pub fn send_message(host: &str, port: &str, payload_str: &str)
     let payload = payload_str.to_owned();
 
     let address = format!("{}:{}", host, port);
-    //let remote_address = address.parse::<SocketAddr>().unwrap();
     let remote_address = address.to_socket_addrs().unwrap().next().unwrap();
 
     // We use port 0 to let the operating system allocate an available port for us.

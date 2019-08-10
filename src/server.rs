@@ -32,7 +32,6 @@ impl MonamiServer {
     pub fn new(host: String, port: String, secret: String, expiration: i64) -> MonamiServer {
 
         let address = format!("{}:{}", host, port);
-        //let address = address.parse::<SocketAddr>().unwrap();
         let address = address.to_socket_addrs().unwrap().next().unwrap();
         let socket = UdpSocket::bind(&address).unwrap();
 
@@ -54,9 +53,6 @@ impl MonamiServer {
 
             fn poll(&mut self) -> Poll<(), ()> {
                 loop {
-                    // First we check to see if there's a message we need to echo back.
-                    // If so then we try to send it back to the original source, waiting
-                    // until it's writable and we're able to do so.
                     if let Some((size, peer)) = self.to_send {
                         let payload_str = str::from_utf8(&self.buf[..size]).unwrap();
 
