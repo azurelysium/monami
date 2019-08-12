@@ -160,7 +160,7 @@ impl MonamiServer {
         }
         let server_future = MonamiServerFuture {
             server: self,
-            buf: vec![0; 1024],
+            buf: vec![0; 40960],
             to_send: None,
         };
 
