@@ -11,7 +11,7 @@ use chrono::{Utc, Local, DateTime};
 
 use crate::shared::{MonamiMessage, MessageType};
 use crate::shared::MonamiStatusMessage;
-use crate::utils::aes_decrypt;
+use crate::utils::{aes_encrypt, aes_decrypt};
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -77,10 +77,13 @@ impl MonamiServer {
                                 let nodes = &mut self.server.nodes;
                                 let client_uuid = (&message.uuid).to_owned();
 
-                                // update expiration or insert a newly found node
+                                // update expiration/output or insert a newly found node
                                 let expires_at = now + self.server.expiration;
                                 nodes.entry(client_uuid)
-                                    .and_modify(|e| { e.expires_at = expires_at })
+                                    .and_modify(|e| {
+                                        e.expires_at = expires_at;
+                                        e.message.output = message.output.to_owned();
+                                    })
                                     .or_insert(MonamiNode {
                                         message,
                                         address: peer.ip().to_string(),
@@ -106,13 +109,9 @@ impl MonamiServer {
                             // Control message
                             MessageType::Control => {
                                 let message = message.message_control.unwrap();
+                                let now = Utc::now().timestamp();
 
-                                if message.function == "get-details" {
-                                    response = serde_json::to_string(&json!({
-                                        "success": true,
-                                        "result": &self.server.nodes,
-                                    })).unwrap();
-                                } else if message.function == "list-nodes" {
+                                if message.function == "list-nodes" {
                                     let vec_nodes: Vec<&MonamiNode> = if message.parameters.contains_key("tag") {
                                         let tag = message.parameters.get("tag").unwrap().to_owned();
                                         self.server.nodes.values().filter(|v| v.message.tag == tag).collect()
@@ -122,7 +121,10 @@ impl MonamiServer {
 
                                     response = serde_json::to_string(&json!({
                                         "success": true,
-                                        "result": &vec_nodes,
+                                        "result": json!({
+                                            "nodes": &vec_nodes,
+                                            "timestamp": now,
+                                        }),
                                     })).unwrap();
                                 } else {
                                     response = serde_json::to_string(&json!({
@@ -133,7 +135,8 @@ impl MonamiServer {
                             }, 
                         }
 
-                        match self.server.socket.poll_send_to(&response.as_bytes(), &peer) {
+                        let encrypted = aes_encrypt(&response, &self.server.secret).unwrap();
+                        match self.server.socket.poll_send_to(&encrypted.as_bytes(), &peer) {
                             Ok(Async::Ready(_)) => {
                                 self.to_send = None;
                             },

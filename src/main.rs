@@ -21,7 +21,6 @@ use server::MonamiServer;
 use client::{MonamiClient, send_message};
 use shared::{MonamiMessage, MonamiControlMessage};
 use shared::MessageType;
-use utils::aes_encrypt;
 
 
 fn main() {
@@ -98,7 +97,7 @@ fn main() {
                          .takes_value(true))
         )
         .subcommand(SubCommand::with_name("control")
-                    .about("runs the monami controller")
+                    .about("executes control commands")
                     .arg(Arg::with_name("host")
                          .long("host")
                          .value_name("SERVER_ADDRESS")
@@ -175,7 +174,6 @@ fn main() {
         };
 
         let payload = serde_json::to_string(&message).unwrap();
-        let encrypted = aes_encrypt(&payload, &secret).unwrap();
-        tokio::run(send_message(&host, &port, &encrypted));
+        tokio::run(send_message(&host, &port, &secret, &payload));
     }
 }

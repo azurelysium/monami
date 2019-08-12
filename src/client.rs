@@ -13,7 +13,7 @@ use chrono::{Utc, Local, DateTime};
 
 use crate::shared::{MonamiMessage, MonamiStatusMessage};
 use crate::shared::{MessageType};
-use crate::utils::aes_encrypt;
+use crate::utils::{aes_encrypt, aes_decrypt};
 
 
 pub struct MonamiClient {
@@ -27,9 +27,11 @@ pub struct MonamiClient {
     tag: String,
 }
 
-pub fn send_message(host: &str, port: &str, payload_str: &str)
+pub fn send_message(host: &str, port: &str, secret: &str, payload_str: &str)
                 -> Box<Future<Item = (), Error = ()> + Send> {
     let payload = payload_str.to_owned();
+    let encrypted = aes_encrypt(&payload, &secret).unwrap();
+    let payload = encrypted.to_owned();
 
     let address = format!("{}:{}", host, port);
     let remote_address = address.to_socket_addrs().unwrap().next().unwrap();
@@ -41,12 +43,16 @@ pub fn send_message(host: &str, port: &str, payload_str: &str)
     let socket = UdpSocket::bind(&local_address).unwrap();
     const MAX_DATAGRAM_SIZE: usize = 65_507;
 
+    let secret = secret.to_owned();
     Box::new(
         socket
             .send_dgram(payload, &remote_address)
             .and_then(|(socket, _)| socket.recv_dgram(vec![0u8; MAX_DATAGRAM_SIZE]))
-            .map(|(_, data, len, _)| {
-                println!("{}", String::from_utf8_lossy(&data[..len]));
+            .map(move |(_, data, len, _)| {
+                let response = String::from_utf8_lossy(&data[..len]);
+                if let Ok(decrypted) = aes_decrypt(&response, &secret) {
+                    println!("{}", decrypted);
+                }
             })
             .map_err(|_| ())
     )
@@ -96,8 +102,7 @@ impl MonamiClient {
                     let payload = serde_json::to_string(&message).unwrap();
                     println!("{}", payload);
 
-                    let encrypted = aes_encrypt(&payload, &self.secret).unwrap();
-                    tokio::spawn(send_message(&self.host, &self.port, &encrypted));
+                    tokio::spawn(send_message(&self.host, &self.port, &self.secret, &payload));
                 }
                 Ok(())
             })
