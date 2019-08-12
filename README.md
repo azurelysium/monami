@@ -7,7 +7,7 @@ To monitor remote boxes, a client program in a remote box periodically sends a s
 Additionaly, each status message can contain a tag and a command execution output. With using a tag, We can monitor various aspects of remote boxes separately.
 
 ## Architecture
-![Image of Monami Architecture](doct/monami-architecture.png)
+![Image of Monami Architecture](docs/monami-architecture.png)
 
 - Monami-server accepts a status message from monami-client
 - Each client has a [uuid](https://en.wikipedia.org/wiki/Universally_unique_identifier)
