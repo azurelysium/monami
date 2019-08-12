@@ -12,7 +12,7 @@ TAG="$1"
 COMMAND="$2"
 
 function send_status {
-    OUTPUT=`$COMMAND`
+    OUTPUT=$(echo "`$COMMAND`" | sed ':a;N;$!ba;s/\n/\\n/g')
     read -r -d '' MONAMI_MESSAGE << EOM
 {
   "message_type": "Status",
@@ -30,7 +30,7 @@ EOM
 
     echo -- `date`
     echo $MONAMI_MESSAGE
-    ENCRYPTED=$(echo $MONAMI_MESSAGE | openssl aes-256-cbc -iv 0 -md sha512 -pass "pass:$SECRET" -nosalt -a -A)
+    ENCRYPTED=$(echo -n $MONAMI_MESSAGE | openssl aes-256-cbc -iv 0 -md sha512 -pass "pass:$SECRET" -nosalt -a -A)
     RESPONSE=$(echo -n $ENCRYPTED | nc -u -w 1 $HOST $PORT)
     DECRYPTED=$(echo -n $RESPONSE | openssl aes-256-cbc -iv 0 -md sha512 -pass "pass:$SECRET" -nosalt -a -A -d)
     echo $DECRYPTED
