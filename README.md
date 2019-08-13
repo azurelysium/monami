@@ -28,7 +28,7 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-        --expiration <SECONDS>    Sets a expiration seconds [default: 30]
+        --expiration <SECONDS>     Sets a expiration seconds [default: 30]
         --host <BIND_ADDRESS>      Sets a bind address [default: 127.0.0.1]
         --port <PORT_NUMBER>       Sets a port number to use [default: 12345]
         --secret <PASSPHRASE>      Sets a shared secret [default: minamo]
