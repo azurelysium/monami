@@ -76,4 +76,4 @@ OPTIONS:
 ```
 
 ## Note on portability
-If preparing Rust build environment on remote boxes seems cumbersome, we can use `docs/monami-client.sh` instead of monami binary.
+If preparing Rust build environment on remote boxes seems cumbersome, we can use `scripts/monami-client.sh` instead of monami binary.
