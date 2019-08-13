@@ -4,6 +4,7 @@ HOST="127.0.0.1"
 PORT="12345"
 SECRET="minamo"
 INTERVAL="10"
+OUTPUT_LIMIT="1200"
 
 HOSTNAME=`hostname`
 UUID=`uuidgen`
@@ -12,7 +13,7 @@ TAG="$1"
 COMMAND="$2"
 
 function send_status {
-    OUTPUT=$(echo "`$COMMAND`" | sed ':a;N;$!ba;s/\n/\\n/g')
+    OUTPUT=$(echo "`$COMMAND`" | sed ':a;N;$!ba;s/\n/\\n/g' | sed $'s/[^[:print:]\t]//g' | tail -c $OUTPUT_LIMIT)
     read -r -d '' MONAMI_MESSAGE << EOM
 {
   "message_type": "Status",

@@ -77,11 +77,12 @@ impl MonamiServer {
                                 let nodes = &mut self.server.nodes;
                                 let client_uuid = (&message.uuid).to_owned();
 
-                                // update expiration/output or insert a newly found node
+                                // update expiration/output/timestamp or insert a newly found node
                                 let expires_at = now + self.server.expiration;
                                 nodes.entry(client_uuid)
                                     .and_modify(|e| {
                                         e.expires_at = expires_at;
+                                        e.message.timestamp = now;
                                         e.message.output = message.output.to_owned();
                                     })
                                     .or_insert(MonamiNode {
