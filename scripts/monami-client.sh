@@ -30,6 +30,8 @@ EOM
 
     echo -- `date`
     echo $MONAMI_MESSAGE
+
+    # we used openssl version 1.1.1
     ENCRYPTED=$(echo -n $MONAMI_MESSAGE | openssl aes-256-cbc -iv 0 -md sha512 -pass "pass:$SECRET" -nosalt -a -A)
     RESPONSE=$(echo -n $ENCRYPTED | nc -u -w 1 $HOST $PORT)
     DECRYPTED=$(echo -n $RESPONSE | openssl aes-256-cbc -iv 0 -md sha512 -pass "pass:$SECRET" -nosalt -a -A -d)

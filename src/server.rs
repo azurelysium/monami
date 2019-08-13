@@ -142,7 +142,7 @@ impl MonamiServer {
                             },
                             Ok(Async::NotReady) => return Ok(Async::NotReady),
                             Err(e) => {
-                                println!("Error: {}", e);
+                                println!("poll_send_to error: {}", e);
                                 self.to_send = None;
                             }
                         };
@@ -153,7 +153,10 @@ impl MonamiServer {
                     self.to_send = match self.server.socket.poll_recv_from(&mut self.buf) {
                         Ok(Async::Ready(val)) => Some(val),
                         Ok(Async::NotReady) => return Ok(Async::NotReady),
-                        Err(_) => None
+                        Err(e) => {
+                            println!("poll_recv_from error: {}", e);
+                            None
+                        }
                     };
                 }
             }

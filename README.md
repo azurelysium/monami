@@ -75,5 +75,13 @@ OPTIONS:
         --secret <PASSPHRASE>         Sets a shared secret [default: minamo]
 ```
 
-## Note on portability
+## Note on portability and possible troubles
 If preparing Rust build environment on remote boxes seems cumbersome, we can use `scripts/monami-client.sh` instead of monami binary.
+
+Usually UDP [MTU](https://en.wikipedia.org/wiki/Maximum_transmission_unit) is less than 1500 bytes. In that case, monami client cannot send a message that has the size bigger than MTU.
+```bash
+# We can check if UDP packet is sent to the server
+$ sudo tcpdump udp port 12345
+# To change MTU temporarily
+$ sudo ifconfig eth0 mtu 9000
+```
