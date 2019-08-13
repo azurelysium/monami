@@ -45,7 +45,7 @@ fn main() {
                          .default_value("12345")
                          .takes_value(true))
                     .arg(Arg::with_name("expiration")
-                         .long("expiratione")
+                         .long("expiration")
                          .value_name("SECONDS")
                          .help("Sets a expiration seconds")
                          .default_value("30")
