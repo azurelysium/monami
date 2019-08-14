@@ -1,4 +1,5 @@
-# monami
+<img src="./docs/monami-logo.jpg" alt="Monami" width="400px">
+# 
 This is a simple monitoring tool for remote boxes, my friend
 
 ## Summary

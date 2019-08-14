@@ -13,7 +13,7 @@ TAG="$1"
 COMMAND="$2"
 
 function send_status {
-    OUTPUT=$(echo "`$COMMAND`" | sed ':a;N;$!ba;s/\n/\\n/g' | sed $'s/[^[:print:]\t]//g' | tail -c $OUTPUT_LIMIT)
+    OUTPUT=$(echo "`$COMMAND`" | sed ':a;N;$!ba;s/\n/\\n/g' | sed $'s/[^[:print:]\t]//g' | head -c $OUTPUT_LIMIT)
     read -r -d '' MONAMI_MESSAGE << EOM
 {
   "message_type": "Status",
