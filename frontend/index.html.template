@@ -1,0 +1,126 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style type="text/css">
+      .container {
+        padding: 20px;
+        border: 1px solid gray;
+        min-height: 500px;
+      }
+      .warn {
+        color: red;
+      }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  </head>
+  <body>
+    <script>
+      // MONAMI-NODES-DATA
+    </script>
+
+    <div id="app" class="container">
+      <font style="font-size: 10pt;">
+        <input type="checkbox" id="checkbox" v-model="autoRefresh">
+        Auto Refresh (30s)
+      </font>
+
+      <h1>Monami Node Status</h1>
+      <font :class="[elapsedSecs > 30 ? 'warn' : '']">
+        Updated at: {{ updatedAt }} ( {{ elapsedSecs }} seconds ago )
+      </font>
+
+      <table>
+        <tr style="background: #ccc;">
+          <td><center>hostname</center></td>
+          <td v-for="tag in tags">
+            <center> {{ tag }} </center>
+          </td>
+        </tr>
+        <tr v-for="hostname in hostnames">
+          <td>{{ hostname }}</td>
+          <td v-for="tag in tags">
+            <center>
+              <button v-if="hosts[hostname][tag]" v-on:click="updateDetails(hostname, tag)">
+                <i class="fa fa-check" style="font-size:30px;color:green;"></i>
+              </button>
+              <i v-else class="fa fa-times" style="font-size:30px;color:red;"></i>
+            </center>
+          </td>
+        </tr>
+      </table>
+
+      <hr>
+      Details: ( {{ detailsUpdatedAt }} )
+      <textarea readonly style="width:100%; height:400px; font-size:8pt; background:black; color:white; font-family:monospace;">
+        {{ details }}
+      </textarea>
+    </div>
+
+    <script>
+      const nodes = data.result.nodes;
+      let hosts = {};
+      let tags = new Set();
+
+      nodes.forEach((item, index) => {
+        let message = item.message;
+        let hostname = message.hostname;
+
+        if (!(hostname in hosts)) {
+          hosts[hostname] = {};
+        }
+        hosts[hostname][message.tag] = message;
+        tags.add(message.tag);
+      });
+
+      console.log(hosts);
+      console.log(tags);
+
+      let hostnames = Object.keys(hosts).sort();
+
+      var app = new Vue({
+          el: '#app',
+          data: () => ({
+              hostnames,
+              hosts,
+              tags,
+              updatedAt: new Date(data.result.timestamp * 1000).toLocaleString(),
+              elapsedSecs: 0,
+              details: '',
+              detailsUpdatedAt: null,
+              autoRefresh: false,
+          }),
+          methods: {
+              updateDetails(hostname, tag) {
+                  this.details = `\n[ ${hostname} - ${tag} ]\n\n` + hosts[hostname][tag].output;
+                  this.detailsUpdatedAt = new Date(hosts[hostname][tag].timestamp * 1000).toLocaleString();
+              },
+
+              updateElapsedTime() {
+                  let now = new Date();
+                  let updated = new Date(data.result.timestamp * 1000);
+                  this.elapsedSecs = Math.floor((now - updated) / 1000);
+
+                  if (this.autoRefresh && this.elapsedSecs > 30) {
+                      window.location = "#autorefresh";
+                      window.location.reload(true);
+                  }
+
+                  setTimeout(function () {
+                      app.updateElapsedTime();
+                  }, 1000);
+              },
+          },
+          mounted() {
+              this.autoRefresh = window.location.hash.includes("autorefresh");
+              this.updateElapsedTime();
+          } 
+      });
+    </script>
+  </body>
+</html>
