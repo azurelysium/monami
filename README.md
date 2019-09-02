@@ -5,7 +5,7 @@
 This is a simple monitoring tool for remote boxes, my friend
 
 ## Summary
-To monitor remote boxes, a client program in a remote box periodically sends a status message to the server. And the server maintains a list of active nodes. We can set an expiration used for distinguising available nodes with unavailable ones.
+To monitor remote boxes, a client program in a remote box periodically sends a status message to the server. And the server maintains a list of active nodes. We can set an expiration used for distinguishing available nodes with unavailable ones.
 
 Additionally, each status message can contain a tag and a command execution output. With using a tag, We can monitor various aspects of remote boxes separately.
 
